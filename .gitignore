@@ -243,3 +243,8 @@ colab_runs/
 *.zip
 experiments/*
 !experiments/.gitkeep
+# Allow the trained deployment checkpoint
+!colab_runs/
+!colab_runs/baseline_20261120_080836/
+!colab_runs/baseline_20261120_080836/checkpoints/
+!colab_runs/baseline_20261120_080836/checkpoints/best.pt
