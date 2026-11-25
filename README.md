@@ -221,3 +221,5 @@ harmonics, and sampled H2–100 voltage/current THD have different definitions.
 - `scripts/`, `results/`, `docs/`: experiment entry points, recorded outputs, and validation notes.
 - `experiments/`: per-run configuration and result directories.
 - `tests/`: focused unit tests; running them does not train the model.
+#   h y b r i d - c n n - i n v e r t e r - p r o j e c t -  
+ 
