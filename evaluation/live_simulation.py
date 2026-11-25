@@ -41,6 +41,7 @@ class LiveSimulationResult:
     voltage_thd_percent: float
     current_thd_percent: float
     current_harmonic_spectrum: HarmonicSpectrum
+    voltage_harmonic_spectrum: HarmonicSpectrum | None = None
     carrier_phase_offsets_degrees: tuple[float, float, float] = (0.0, 60.0, 120.0)
 
 
@@ -236,7 +237,10 @@ def run_live_simulation(
         "rmse": rmse(target_reference, prediction_voltage),
         "r_squared": r_squared(target_reference, prediction_voltage),
     }
-    voltage_thd = calculate_thd(simulation.output_voltage)
+    voltage_thd, voltage_spectrum = calculate_thd(
+        simulation.output_voltage,
+        return_spectrum=True,
+    )
     current_thd, current_spectrum = calculate_thd(
         simulation.load_current,
         return_spectrum=True,
@@ -256,6 +260,7 @@ def run_live_simulation(
         voltage_thd_percent=float(voltage_thd),
         current_thd_percent=float(current_thd),
         current_harmonic_spectrum=current_spectrum,
+        voltage_harmonic_spectrum=voltage_spectrum,
     )
 
 

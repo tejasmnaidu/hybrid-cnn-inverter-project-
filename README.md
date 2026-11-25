@@ -45,12 +45,15 @@ See [THD conventions](./docs/thd_conventions.md) and the
 
 - Python 3.10 or newer
 - Dependencies in [`requirements.txt`](./requirements.txt)
-- The project dataset archive for dataset-backed features
-- A compatible trained checkpoint for CNN inference and CNN-dependent features
+- The project dataset archive for dataset-backed features (optional for live simulation)
+- The compatible trained checkpoint for CNN inference (included in this repository)
 
-The dataset archive and checkpoint are intentionally excluded from Git. Obtain
-them separately and place them at these paths, or select/upload the appropriate
-files in the dashboard:
+The dataset archive is intentionally excluded from Git. The trained checkpoint
+is included at its default path. A fresh clone can therefore run the live
+simulator and CNN inference without downloading or uploading the dataset. The
+dataset is only needed for record views, preprocessing, dataset diagnostics, and
+held-out evaluation. To enable those features, place the ZIP at the path below
+or select/upload the ZIP or an extracted CSV directory in the dashboard:
 
 ```text
 data/raw/Seven_Level_Inverter_Project.zip
@@ -59,12 +62,11 @@ colab_runs/baseline_20261120_080836/checkpoints/best.pt
 
 The dataset contains 10,000 records split into 7,000 training, 1,500
 validation, and 1,500 testing records. It uses 400 waveform samples per cycle,
-20 kHz sampling, and a 50 Hz fundamental. Dataset and checkpoint files are
-ignored by `.gitignore`; they are not downloaded automatically. On first
-launch, upload the dataset ZIP from **DATASET & MODEL SETTINGS** or set the
-dataset path to an existing ZIP/CSV directory. Upload the compatible checkpoint
-in the same panel if it is not at the default path. Without the dataset, the
-dashboard shows setup instructions instead of a traceback.
+20 kHz sampling, and a 50 Hz fundamental. If the optional dataset is absent,
+the dashboard displays an informational note; no dataset upload is required for
+live simulation or CNN inference. Upload a compatible checkpoint in **DATASET
+& MODEL SETTINGS** only if you intentionally want to override the included
+checkpoint.
 
 ## Quick start (Windows PowerShell)
 
@@ -78,10 +80,9 @@ python -m pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Open the local URL printed by Streamlit. Provide the dataset ZIP and compatible
-checkpoint as described above for the full CNN workflow. Without a checkpoint,
-CNN-dependent inference and simulation controls are unavailable; the dashboard
-reports the missing requirement.
+Open the local URL printed by Streamlit. The included checkpoint enables live
+CNN inference immediately. Provide the optional dataset ZIP or extracted CSV
+directory only for dataset-backed views and evaluations.
 
 ## Dataset validation and tests
 

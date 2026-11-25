@@ -68,6 +68,7 @@ from optimization.cnn_guided_search import (
     run_cnn_guided_hybrid,
 )
 from evaluation.metrics import calculate_metrics
+from evaluation.thd_analysis import calculate_thd
 from models.cnn_model import detect_device
 from models.checkpoint_loader import load_checkpoint_for_inference
 from preprocessing.data_loader import load_dataset
@@ -619,17 +620,20 @@ try:
             f"Dataset source not found: {resolved_dataset_path}"
         )
     if dataset_error is not None:
-        st.error(
-            "Dataset not found. Upload the project ZIP or choose an existing "
-            "extracted CSV directory in DATASET & MODEL SETTINGS."
-        )
-        with st.expander("Dataset setup"):
-            st.markdown(
-                "Dataset-dependent views are unavailable while the original "
-                "ZIP or extracted CSV directory is missing. Live simulator "
-                "and CNN inference continue without dataset lookup."
+        if isinstance(dataset_error, FileNotFoundError):
+            st.info(
+                "The configured optional training dataset is not available. "
+                "No upload is needed for live inverter simulation or CNN "
+                "inference. Dataset record views, preprocessing, and held-out "
+                "evaluation require the dataset ZIP or extracted CSV files."
             )
-            st.code(str(dataset_error))
+        else:
+            st.error(
+                "The selected dataset could not be loaded. Choose a valid "
+                "dataset ZIP or extracted CSV directory in DATASET & MODEL SETTINGS."
+            )
+            with st.expander("Dataset setup details"):
+                st.code(str(dataset_error))
 
     if checkpoint_file is not None:
         checkpoint_bytes = checkpoint_file.getvalue()
@@ -3916,6 +3920,75 @@ try:
                 "amplitudes. The plotted orders 1–100 correspond to the analytic "
                 "event-based Fourier coefficients."
             )
+
+            voltage_spectrum = live_result.voltage_harmonic_spectrum
+            if voltage_spectrum is not None:
+                voltage_spectrum_series = [
+                    (
+                        "Baseline output voltage",
+                        voltage_spectrum.amplitudes,
+                        "#43d6c5",
+                        "-",
+                    )
+                ]
+                if candidate_live_result is not None:
+                    _candidate_voltage_thd, candidate_voltage_spectrum = calculate_thd(
+                        candidate_live_result.simulation.output_voltage,
+                        sampling_frequency_hz=SAMPLING_FREQUENCY_HZ,
+                        fundamental_frequency_hz=FUNDAMENTAL_FREQUENCY_HZ,
+                        max_harmonic=100,
+                        return_spectrum=True,
+                    )
+                    voltage_spectrum_series.append(
+                        (
+                            f"{selected_optimizer_label} output voltage",
+                            candidate_voltage_spectrum.amplitudes,
+                            "#d889d8",
+                            "--",
+                        )
+                    )
+                voltage_spectrum_figure = make_chart(
+                    voltage_spectrum_series,
+                    "Output-voltage harmonic spectrum (sampled FFT)",
+                    "Peak amplitude (V)",
+                    x_values=voltage_spectrum.frequencies_hz,
+                    x_label="Frequency (Hz)",
+                )
+                st.pyplot(voltage_spectrum_figure, width="stretch")
+                plt.close(voltage_spectrum_figure)
+                fundamental_rows = [
+                    {
+                        "Order": int(order),
+                        "Frequency (Hz)": (
+                            float(frequency)
+                            if harmonic_index == 0
+                            else float(frequency)
+                        ),
+                        "Peak amplitude (V)": float(amplitude),
+                    }
+                    for harmonic_index, (order, frequency, amplitude) in enumerate(
+                        zip(
+                            voltage_spectrum.harmonic_orders,
+                            voltage_spectrum.frequencies_hz,
+                            voltage_spectrum.amplitudes,
+                        )
+                    )
+                ]
+                with st.expander("FFT fundamental and harmonic magnitudes", expanded=False):
+                    st.dataframe(
+                        fundamental_rows,
+                        width="stretch",
+                        hide_index=True,
+                    )
+                    st.caption(
+                        f"Detected fundamental: "
+                        f"{voltage_spectrum.fundamental_frequency_hz:.3f} Hz · "
+                        f"{voltage_spectrum.fundamental_amplitude:.3f} V peak · "
+                        f"{live_result.voltage_thd_percent:.3f}% THD "
+                        "(harmonics 2–100)."
+                    )
+                    if voltage_spectrum.analysis_warning:
+                        st.warning(voltage_spectrum.analysis_warning)
 
             current_spectrum_series = [
                 (

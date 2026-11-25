@@ -48,7 +48,7 @@ class DatasetStartupTests(unittest.TestCase):
         self.assertEqual(result.cnn_prediction_voltage.shape, (400,))
         self.assertTrue(all(torch.isfinite(torch.as_tensor(result.cnn_prediction_voltage))))
 
-    def test_missing_dataset_shows_upload_instructions_without_traceback(self) -> None:
+    def test_missing_optional_dataset_allows_live_cnn_simulation(self) -> None:
         app_path = Path(__file__).resolve().parents[1] / "app.py"
         with tempfile.TemporaryDirectory() as temporary:
             missing_dataset = Path(temporary) / "missing_dataset.zip"
@@ -61,14 +61,31 @@ class DatasetStartupTests(unittest.TestCase):
                 if item.label == "Dataset ZIP or extracted CSV directory"
             ).set_value(str(missing_dataset))
             app.run()
+            self.assertFalse(app.exception)
+            self.assertTrue(
+                any(
+                    "No upload is needed for live inverter simulation or CNN inference"
+                    in item.value
+                    for item in app.info
+                )
+            )
+            self.assertFalse(
+                any(
+                    "selected dataset could not be loaded" in item.value.casefold()
+                    or "dataset not found" in item.value.casefold()
+                    for item in app.error
+                )
+            )
+
+            next(
+                item
+                for item in app.button
+                if item.label == "Run New Simulation"
+            ).click()
+            app.run()
 
         self.assertFalse(app.exception)
-        self.assertTrue(
-            any(
-                "Dataset not found. Upload the project ZIP" in item.value
-                for item in app.error
-            )
-        )
+        self.assertIn("live_demo_result", app.session_state)
         self.assertTrue(
             any(
                 item.label == "Upload project dataset ZIP"

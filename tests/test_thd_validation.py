@@ -5,6 +5,7 @@ import unittest
 import numpy as np
 
 from evaluation.event_based_thd import evaluate_event_based_thd
+from evaluation.harmonic_analysis import harmonic_spectrum
 from evaluation.thd_analysis import calculate_thd
 from multilevel.inverter_simulator import (
     SAMPLES_PER_CYCLE,
@@ -14,6 +15,69 @@ from multilevel.inverter_simulator import (
 
 
 class THDValidationTests(unittest.TestCase):
+    def test_fft_removes_dc_and_identifies_fundamental(self) -> None:
+        time = np.arange(SAMPLES_PER_CYCLE, dtype=np.float64) / SAMPLING_FREQUENCY_HZ
+        waveform = 500.0 + 230.0 * np.sin(2.0 * np.pi * 50.0 * time)
+        spectrum = harmonic_spectrum(
+            waveform,
+            sampling_frequency_hz=SAMPLING_FREQUENCY_HZ,
+            fundamental_frequency_hz=50.0,
+            max_harmonic=100,
+        )
+        self.assertTrue(spectrum.fundamental_valid)
+        self.assertAlmostEqual(spectrum.fundamental_frequency_hz, 50.0, places=6)
+        self.assertAlmostEqual(spectrum.fundamental_amplitude, 230.0, places=6)
+        self.assertTrue(spectrum.is_integer_cycle)
+
+    def test_fft_accepts_non_integer_cycles_with_explicit_warning(self) -> None:
+        time = np.arange(350, dtype=np.float64) / SAMPLING_FREQUENCY_HZ
+        waveform = 230.0 * np.sin(2.0 * np.pi * 50.0 * time)
+        spectrum = harmonic_spectrum(
+            waveform,
+            sampling_frequency_hz=SAMPLING_FREQUENCY_HZ,
+            fundamental_frequency_hz=50.0,
+            max_harmonic=100,
+        )
+        self.assertTrue(spectrum.fundamental_valid)
+        self.assertFalse(spectrum.is_integer_cycle)
+        self.assertIn("incomplete cycles", spectrum.analysis_warning)
+
+    def test_zero_and_too_small_signals_do_not_return_misleading_thd(self) -> None:
+        for waveform in (
+            np.zeros(400, dtype=np.float64),
+            np.full(400, 100.0, dtype=np.float64),
+            np.ones(400, dtype=np.float64) * 1e-12,
+        ):
+            with self.subTest(waveform=waveform[:4]):
+                with self.assertRaisesRegex(ValueError, "fundamental"):
+                    calculate_thd(
+                        waveform,
+                        sampling_frequency_hz=SAMPLING_FREQUENCY_HZ,
+                        fundamental_frequency_hz=50.0,
+                        max_harmonic=100,
+                    )
+
+    def test_invalid_input_sizes_and_sampling_ranges_are_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "at least two"):
+            harmonic_spectrum(
+                np.array([1.0]),
+                sampling_frequency_hz=20_000.0,
+                fundamental_frequency_hz=50.0,
+            )
+        with self.assertRaisesRegex(ValueError, "finite"):
+            harmonic_spectrum(
+                np.array([1.0, np.nan]),
+                sampling_frequency_hz=20_000.0,
+                fundamental_frequency_hz=50.0,
+            )
+        with self.assertRaisesRegex(ValueError, "too low"):
+            harmonic_spectrum(
+                np.ones(400),
+                sampling_frequency_hz=100.0,
+                fundamental_frequency_hz=50.0,
+                max_harmonic=2,
+            )
+
     def test_pure_sine_thd_is_zero(self) -> None:
         time = np.arange(SAMPLES_PER_CYCLE, dtype=np.float64) / SAMPLING_FREQUENCY_HZ
         waveform = 230.0 * np.sin(2.0 * np.pi * 50.0 * time)

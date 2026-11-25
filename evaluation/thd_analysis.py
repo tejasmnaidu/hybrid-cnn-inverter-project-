@@ -26,6 +26,10 @@ def calculate_thd(
         fundamental_frequency_hz=fundamental_frequency_hz,
         max_harmonic=max_harmonic,
     )
+    if not spectrum.fundamental_valid:
+        raise ValueError(
+            "THD is undefined because the fundamental component is zero or too small."
+        )
     if spectrum.fundamental_amplitude <= np.finfo(np.float64).eps:
         raise ValueError("THD is undefined when the fundamental amplitude is zero.")
     harmonic_amplitudes = spectrum.amplitudes[spectrum.harmonic_orders >= 2]
