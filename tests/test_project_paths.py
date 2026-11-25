@@ -4,9 +4,10 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from models.model_factory import create_model
-from project_paths import resolve_project_path
+from project_paths import persist_uploaded_dataset, resolve_project_path
 
 
 class ProjectPathTests(unittest.TestCase):
@@ -20,6 +21,24 @@ class ProjectPathTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             absolute = (Path(temporary) / "checkpoint.pt").resolve()
             self.assertEqual(resolve_project_path(absolute, Path.cwd()), absolute)
+
+    def test_uploaded_dataset_is_cached_by_content_outside_project(self) -> None:
+        contents = b"test dataset archive"
+        with tempfile.TemporaryDirectory() as temporary, patch(
+            "project_paths.tempfile.gettempdir",
+            return_value=temporary,
+        ):
+            first_path = persist_uploaded_dataset(contents)
+            second_path = persist_uploaded_dataset(contents)
+
+            self.assertEqual(first_path, second_path)
+            self.assertEqual(first_path.suffix, ".zip")
+            self.assertEqual(first_path.read_bytes(), contents)
+            self.assertNotIn("Hybrid_CNN_Inverter_Optimization", str(first_path))
+
+    def test_empty_uploaded_dataset_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "empty"):
+            persist_uploaded_dataset(b"")
 
     def test_model_factory_resolves_relative_config_from_project_root(self) -> None:
         original_directory = Path.cwd()

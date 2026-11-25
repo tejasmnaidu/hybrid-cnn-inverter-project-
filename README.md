@@ -60,7 +60,11 @@ colab_runs/baseline_20261120_080836/checkpoints/best.pt
 The dataset contains 10,000 records split into 7,000 training, 1,500
 validation, and 1,500 testing records. It uses 400 waveform samples per cycle,
 20 kHz sampling, and a 50 Hz fundamental. Dataset and checkpoint files are
-ignored by `.gitignore`; they are not downloaded automatically.
+ignored by `.gitignore`; they are not downloaded automatically. On first
+launch, upload the dataset ZIP from **DATASET & MODEL SETTINGS** or set the
+dataset path to an existing ZIP/CSV directory. Upload the compatible checkpoint
+in the same panel if it is not at the default path. Without the dataset, the
+dashboard shows setup instructions instead of a traceback.
 
 ## Quick start (Windows PowerShell)
 
@@ -74,10 +78,10 @@ python -m pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Open the local URL printed by Streamlit. For the full CNN workflow, provide a
-compatible checkpoint and the dataset. Without a checkpoint, CNN-dependent
-inference and simulation controls are unavailable; the dashboard reports the
-missing requirement.
+Open the local URL printed by Streamlit. Provide the dataset ZIP and compatible
+checkpoint as described above for the full CNN workflow. Without a checkpoint,
+CNN-dependent inference and simulation controls are unavailable; the dashboard
+reports the missing requirement.
 
 ## Dataset validation and tests
 

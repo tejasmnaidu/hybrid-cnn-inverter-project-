@@ -73,7 +73,11 @@ from models.model_factory import create_model
 from preprocessing.data_loader import load_dataset
 from preprocessing.data_validation import validate_dataset
 from preprocessing.preprocess import NormalizationStats, preprocess_dataset
-from project_paths import PROJECT_ROOT, resolve_project_path
+from project_paths import (
+    PROJECT_ROOT,
+    persist_uploaded_dataset,
+    resolve_project_path,
+)
 
 
 # ============================================================
@@ -497,8 +501,16 @@ def evaluation_summary_payload(result: CNNTestEvaluation) -> str:
 # SIDEBAR: SETTINGS ARE NOT THE LANDING PAGE
 # ============================================================
 
-default_dataset = str(
+default_dataset_directory = (
     project_root / "data" / "raw" / "Seven_Level_Inverter_Project_extracted"
+)
+default_dataset_archive = (
+    project_root / "data" / "raw" / "Seven_Level_Inverter_Project.zip"
+)
+default_dataset = str(
+    default_dataset_directory
+    if default_dataset_directory.is_dir()
+    else default_dataset_archive
 )
 default_checkpoint = (
     project_root
@@ -536,6 +548,15 @@ with st.sidebar:
                 if default_checkpoint.is_file()
                 else "not found"
             )
+        )
+        dataset_upload = st.file_uploader(
+            "Upload project dataset ZIP",
+            type=["zip"],
+            key="project_dataset_upload",
+            help=(
+                "Use the supplied project dataset ZIP if it is not available at "
+                "the path above. The upload is cached outside the repository."
+            ),
         )
 
     st.divider()
@@ -575,7 +596,15 @@ st.markdown(
 
 try:
     with st.spinner("Loading dataset and validating project data..."):
-        resolved_dataset_path = resolve_project_path(dataset_path, project_root)
+        resolved_dataset_path = (
+            persist_uploaded_dataset(dataset_upload.getvalue())
+            if dataset_upload is not None
+            else resolve_project_path(dataset_path, project_root)
+        )
+        if not resolved_dataset_path.exists():
+            raise FileNotFoundError(
+                f"Dataset source not found: {resolved_dataset_path}"
+            )
         prepared, dataset_summary = load_prepared_dataset(
             str(resolved_dataset_path),
             source_fingerprint(resolved_dataset_path),
@@ -3980,6 +4009,18 @@ try:
             st.caption("Simulation status: no result exists for the current inputs.")
 
     # --------------------------------------------------------
+except FileNotFoundError as exc:
+    st.error(
+        "Dataset not found. Upload the project ZIP or choose an existing "
+        "extracted CSV directory in DATASET & MODEL SETTINGS."
+    )
+    with st.expander("Dataset setup"):
+        st.markdown(
+            "The dataset is not included in the GitHub repository. Obtain "
+            "`Seven_Level_Inverter_Project.zip`, then upload it in the sidebar "
+            "or place it at the displayed dataset path."
+        )
+        st.code(str(exc))
 except (
     OSError,
     ValueError,
