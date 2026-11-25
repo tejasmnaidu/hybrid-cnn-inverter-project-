@@ -69,7 +69,7 @@ from optimization.cnn_guided_search import (
 )
 from evaluation.metrics import calculate_metrics
 from models.cnn_model import detect_device
-from models.model_factory import create_model
+from models.checkpoint_loader import load_checkpoint_for_inference
 from preprocessing.data_loader import load_dataset
 from preprocessing.data_validation import validate_dataset
 from preprocessing.preprocess import NormalizationStats, preprocess_dataset
@@ -595,20 +595,41 @@ st.markdown(
 # ============================================================
 
 try:
-    with st.spinner("Loading dataset and validating project data..."):
-        resolved_dataset_path = (
-            persist_uploaded_dataset(dataset_upload.getvalue())
-            if dataset_upload is not None
-            else resolve_project_path(dataset_path, project_root)
+    resolved_dataset_path = (
+        persist_uploaded_dataset(dataset_upload.getvalue())
+        if dataset_upload is not None
+        else resolve_project_path(dataset_path, project_root)
+    )
+    dataset_error = None
+    prepared = None
+    dataset_summary = {}
+    if resolved_dataset_path.exists():
+        try:
+            with st.spinner("Loading and validating the optional training dataset..."):
+                prepared, dataset_summary = load_prepared_dataset(
+                    str(resolved_dataset_path),
+                    source_fingerprint(resolved_dataset_path),
+                )
+        except (OSError, ValueError, KeyError, IndexError, TypeError) as exc:
+            dataset_error = exc
+            prepared = None
+            dataset_summary = {}
+    else:
+        dataset_error = FileNotFoundError(
+            f"Dataset source not found: {resolved_dataset_path}"
         )
-        if not resolved_dataset_path.exists():
-            raise FileNotFoundError(
-                f"Dataset source not found: {resolved_dataset_path}"
+    if dataset_error is not None:
+        st.error(
+            "Dataset not found. Upload the project ZIP or choose an existing "
+            "extracted CSV directory in DATASET & MODEL SETTINGS."
+        )
+        with st.expander("Dataset setup"):
+            st.markdown(
+                "Dataset-dependent views are unavailable while the original "
+                "ZIP or extracted CSV directory is missing. Live simulator "
+                "and CNN inference continue without dataset lookup."
             )
-        prepared, dataset_summary = load_prepared_dataset(
-            str(resolved_dataset_path),
-            source_fingerprint(resolved_dataset_path),
-        )
+            st.code(str(dataset_error))
 
     if checkpoint_file is not None:
         checkpoint_bytes = checkpoint_file.getvalue()
@@ -627,68 +648,53 @@ try:
     stats = None
     device = detect_device()
     checkpoint_status = "Not loaded"
+    checkpoint = None
 
     if checkpoint_source is not None:
         with st.spinner("Loading trained CNN checkpoint..."):
-            checkpoint = torch.load(
+            model, stats, metadata, checkpoint = load_checkpoint_for_inference(
                 checkpoint_source,
-                map_location=device,
-                weights_only=True,
+                device,
             )
+            checkpoint_status = "Loaded"
 
-            if not isinstance(checkpoint, dict) or "model_state" not in checkpoint:
-                raise ValueError("The selected file is not a project training checkpoint.")
-
-            metadata = checkpoint.get("metadata", {})
-            model_config = metadata.get("model_config")
-            normalization_data = metadata.get("normalization")
-
-            if not isinstance(model_config, dict) or not isinstance(normalization_data, dict):
-                raise ValueError("Checkpoint model or normalization metadata is missing.")
-
-            stats = NormalizationStats(**normalization_data)
-
-            saved_features = metadata.get("operating_feature_names")
-            if saved_features is not None and list(saved_features) != list(
-                prepared.operating_feature_names
-            ):
-                raise ValueError(
-                    "Checkpoint operating-condition feature order does not match the dataset."
-                )
-
-            for saved_value, current_value in (
-                (stats.input_voltage_mean, prepared.stats.input_voltage_mean),
-                (stats.input_voltage_std, prepared.stats.input_voltage_std),
-                (stats.load_current_mean, prepared.stats.load_current_mean),
-                (stats.load_current_std, prepared.stats.load_current_std),
-                (stats.target_voltage_mean, prepared.stats.target_voltage_mean),
-                (stats.target_voltage_std, prepared.stats.target_voltage_std),
-            ):
-                if not np.isclose(saved_value, current_value, rtol=1e-5, atol=1e-7):
+            if prepared is not None:
+                saved_features = metadata.get("operating_feature_names")
+                if saved_features is not None and list(saved_features) != list(
+                    prepared.operating_feature_names
+                ):
                     raise ValueError(
-                        "Checkpoint normalization does not match the selected dataset."
+                        "Checkpoint operating-condition feature order does not match the dataset."
                     )
 
-            if not np.allclose(
-                stats.operating_mean,
-                prepared.stats.operating_mean,
-                rtol=1e-5,
-                atol=1e-7,
-            ):
-                raise ValueError("Checkpoint operating-condition means do not match.")
+                for saved_value, current_value in (
+                    (stats.input_voltage_mean, prepared.stats.input_voltage_mean),
+                    (stats.input_voltage_std, prepared.stats.input_voltage_std),
+                    (stats.load_current_mean, prepared.stats.load_current_mean),
+                    (stats.load_current_std, prepared.stats.load_current_std),
+                    (stats.target_voltage_mean, prepared.stats.target_voltage_mean),
+                    (stats.target_voltage_std, prepared.stats.target_voltage_std),
+                ):
+                    if not np.isclose(saved_value, current_value, rtol=1e-5, atol=1e-7):
+                        raise ValueError(
+                            "Checkpoint normalization does not match the selected dataset."
+                        )
 
-            if not np.allclose(
-                stats.operating_std,
-                prepared.stats.operating_std,
-                rtol=1e-5,
-                atol=1e-7,
-            ):
-                raise ValueError("Checkpoint operating-condition scales do not match.")
+                if not np.allclose(
+                    stats.operating_mean,
+                    prepared.stats.operating_mean,
+                    rtol=1e-5,
+                    atol=1e-7,
+                ):
+                    raise ValueError("Checkpoint operating-condition means do not match.")
 
-            model = create_model(model_config).to(device)
-            model.load_state_dict(checkpoint["model_state"])
-            model.eval()
-            checkpoint_status = "Loaded"
+                if not np.allclose(
+                    stats.operating_std,
+                    prepared.stats.operating_std,
+                    rtol=1e-5,
+                    atol=1e-7,
+                ):
+                    raise ValueError("Checkpoint operating-condition scales do not match.")
 
     config = dataset_summary.get("configuration", {})
     split_counts = dataset_summary.get("split_counts", {})
@@ -698,39 +704,66 @@ try:
     # GLOBAL SAMPLE SELECTION
     # ========================================================
 
-    all_splits = np.asarray(prepared.splits).astype(str)
-    split_options = ["All"] + sorted(set(all_splits.tolist()))
+    all_splits = (
+        np.asarray(prepared.splits).astype(str)
+        if prepared is not None
+        else np.asarray([], dtype=str)
+    )
+    if prepared is not None:
+        split_options = ["All"] + sorted(set(all_splits.tolist()))
 
-    selector_col1, selector_col2, selector_col3 = st.columns([1.2, 1.2, 2.6])
+        selector_col1, selector_col2, selector_col3 = st.columns([1.2, 1.2, 2.6])
 
-    with selector_col1:
-        selected_split = st.selectbox(
-            "RECORD GROUP",
-            split_options,
-            index=0,
-        )
+        with selector_col1:
+            selected_split = st.selectbox(
+                "RECORD GROUP",
+                split_options,
+                index=0,
+            )
 
-    if selected_split == "All":
-        available_indices = np.arange(len(prepared.sample_ids))
+        if selected_split == "All":
+            available_indices = np.arange(len(prepared.sample_ids))
+        else:
+            available_indices = np.flatnonzero(all_splits == selected_split)
+
+        available_ids = prepared.sample_ids[available_indices].astype(int).tolist()
+
+        with selector_col2:
+            selected_id = st.selectbox(
+                "SAMPLE ID",
+                available_ids,
+                index=0,
+            )
+
+        index = int(np.flatnonzero(prepared.sample_ids == int(selected_id))[0])
+        record_status = "DATASET VALIDATED"
     else:
-        available_indices = np.flatnonzero(all_splits == selected_split)
-
-    available_ids = prepared.sample_ids[available_indices].astype(int).tolist()
-
-    with selector_col2:
-        selected_id = st.selectbox(
-            "SAMPLE ID",
-            available_ids,
-            index=0,
+        index = 0
+        selected_id = None
+        record_status = "DATASET NOT LOADED"
+        st.info(
+            "The original dataset is unavailable. Live CNN inference and "
+            "simulator/optimizer workflows remain available. Dataset record "
+            "views and test evaluation require an uploaded or local dataset."
         )
 
-    index = int(np.flatnonzero(prepared.sample_ids == int(selected_id))[0])
-
-    with selector_col3:
+    if prepared is not None:
+        with selector_col3:
+            st.markdown(
+                f"""
+                <div style="padding-top:1.75rem;text-align:right">
+                    <span class="status">● {record_status}</span>
+                    &nbsp;
+                    <span class="status">● CNN {checkpoint_status.upper()}</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+    else:
         st.markdown(
             f"""
             <div style="padding-top:1.75rem;text-align:right">
-                <span class="status">● DATASET VALIDATED</span>
+                <span class="status">● {record_status}</span>
                 &nbsp;
                 <span class="status">● CNN {checkpoint_status.upper()}</span>
             </div>
@@ -810,98 +843,104 @@ try:
             '<div class="section-heading">Inverter waveform monitoring</div>',
             unsafe_allow_html=True,
         )
-        left, right = st.columns([1.8, 1])
-
-        with left:
-            voltage_chart = make_chart(
-                [
-                    (
-                        "Dataset inverter voltage",
-                        prepared.input_voltage[index],
-                        "#43d6c5",
-                        "-",
-                    ),
-                    (
-                        "Reference target",
-                        prepared.target_voltage[index],
-                        "#679df5",
-                        "--",
-                    ),
-                ],
-                "Voltage waveform comparison",
-                "Voltage (V)",
+        if prepared is None:
+            st.info(
+                "Dataset waveform monitoring is unavailable until the project "
+                "dataset ZIP or extracted CSV directory is provided."
             )
-            st.pyplot(voltage_chart, width="stretch")
-            plt.close(voltage_chart)
+        else:
+            left, right = st.columns([1.8, 1])
 
-            current_chart = make_chart(
-                [
-                    (
-                        "Load current",
-                        prepared.load_current[index],
-                        "#e7ad65",
-                        "-",
-                    ),
-                ],
-                "Load current response",
-                "Current (A)",
-            )
-            st.pyplot(current_chart, width="stretch")
-            plt.close(current_chart)
-
-        with right:
-            st.markdown("#### Selected operating point")
-
-            operating_values = (
-                prepared.operating_conditions[index].astype(np.float64)
-                * np.asarray(prepared.stats.operating_std, dtype=np.float64)
-                + np.asarray(prepared.stats.operating_mean, dtype=np.float64)
-            )
-            operating_rows = []
-
-            unit_labels = {
-                "modulationIndex": "",
-                "loadResistance": "Ω",
-                "loadInductance": "H",
-                "phaseAngle": "rad",
-            }
-            for name, value in zip(
-                prepared.operating_feature_names,
-                operating_values,
-            ):
-                operating_rows.append(
-                    {
-                        "Operating parameter": str(name),
-                        "Physical value": (
-                            f"{np.degrees(float(value)):.3f}°"
-                            if str(name).casefold() == "phaseangle"
-                            else f"{float(value):.5g} {unit_labels.get(str(name), '')}".strip()
+            with left:
+                voltage_chart = make_chart(
+                    [
+                        (
+                            "Dataset inverter voltage",
+                            prepared.input_voltage[index],
+                            "#43d6c5",
+                            "-",
                         ),
-                        "Source": "Dataset (inverse transformed)",
-                    }
+                        (
+                            "Reference target",
+                            prepared.target_voltage[index],
+                            "#679df5",
+                            "--",
+                        ),
+                    ],
+                    "Voltage waveform comparison",
+                    "Voltage (V)",
+                )
+                st.pyplot(voltage_chart, width="stretch")
+                plt.close(voltage_chart)
+
+                current_chart = make_chart(
+                    [
+                        (
+                            "Load current",
+                            prepared.load_current[index],
+                            "#e7ad65",
+                            "-",
+                        ),
+                    ],
+                    "Load current response",
+                    "Current (A)",
+                )
+                st.pyplot(current_chart, width="stretch")
+                plt.close(current_chart)
+
+            with right:
+                st.markdown("#### Selected operating point")
+
+                operating_values = (
+                    prepared.operating_conditions[index].astype(np.float64)
+                    * np.asarray(prepared.stats.operating_std, dtype=np.float64)
+                    + np.asarray(prepared.stats.operating_mean, dtype=np.float64)
+                )
+                operating_rows = []
+
+                unit_labels = {
+                    "modulationIndex": "",
+                    "loadResistance": "Ω",
+                    "loadInductance": "H",
+                    "phaseAngle": "rad",
+                }
+                for name, value in zip(
+                    prepared.operating_feature_names,
+                    operating_values,
+                ):
+                    operating_rows.append(
+                        {
+                            "Operating parameter": str(name),
+                            "Physical value": (
+                                f"{np.degrees(float(value)):.3f}°"
+                                if str(name).casefold() == "phaseangle"
+                                else f"{float(value):.5g} {unit_labels.get(str(name), '')}".strip()
+                            ),
+                            "Source": "Dataset (inverse transformed)",
+                        }
+                    )
+
+                st.dataframe(
+                    operating_rows,
+                    width="stretch",
+                    hide_index=True,
                 )
 
-            st.dataframe(
-                operating_rows,
-                width="stretch",
-                hide_index=True,
-            )
-
-            st.markdown("#### Record information")
-            st.markdown(
-                f"""
-                <div class="panel">
-                    <div class="panel-label">SAMPLE IDENTIFIER</div>
-                    <div class="panel-value">{int(selected_id)}</div>
-                    <div class="panel-note">Dataset split: {all_splits[index]}</div>
-                    <hr style="border-color:#263447">
-                    <div class="panel-label">WAVEFORM LENGTH</div>
-                    <div class="panel-value">{prepared.target_voltage.shape[1]} points</div>
-                    <div class="panel-note">Dataset record</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+                st.markdown("#### Record information")
+                st.markdown(
+                    f"""
+                    <div class="panel">
+                        <div class="panel-label">SAMPLE IDENTIFIER</div>
+                        <div class="panel-value">{int(selected_id)}</div>
+                        <div class="panel-note">Dataset split: {all_splits[index]}</div>
+                        <hr style="border-color:#263447">
+                        <div class="panel-label">WAVEFORM LENGTH</div>
+                        <div class="panel-value">{prepared.target_voltage.shape[1]} points</div>
+                        <div class="panel-note">Dataset record</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
         st.markdown("#### Workflow")
         workflow_steps = (
@@ -942,7 +981,12 @@ try:
             unsafe_allow_html=True,
         )
 
-        if model is None:
+        if prepared is None:
+            st.info(
+                "Dataset record CNN prediction requires the project dataset "
+                "to provide input voltage, load current, and operating conditions."
+            )
+        elif model is None:
             st.warning(
                 "CNN unavailable. Load a compatible checkpoint."
             )
@@ -1065,7 +1109,11 @@ try:
             unsafe_allow_html=True,
         )
 
-        testing_count = int(np.count_nonzero(all_splits == "testing"))
+        testing_count = (
+            int(np.count_nonzero(all_splits == "testing"))
+            if prepared is not None
+            else 0
+        )
         status_col, count_col = st.columns([2, 1])
         cached_result = st.session_state.get("cnn_test_evaluation_result")
         cached_key = st.session_state.get("cnn_test_evaluation_cache_key")
@@ -1096,7 +1144,12 @@ try:
         elif testing_count == 0:
             st.error("No testing records in dataset.")
 
-        if run_test_evaluation and model is not None and current_result is None:
+        if (
+            run_test_evaluation
+            and model is not None
+            and prepared is not None
+            and current_result is None
+        ):
             progress_bar = st.progress(0.0)
             progress_text = st.empty()
 
@@ -1285,15 +1338,28 @@ try:
             '<div class="section-heading">Model Diagnostics</div>',
             unsafe_allow_html=True,
         )
+        if prepared is None:
+            st.info(
+                "Dataset diagnostics require the project dataset. Live simulator, "
+                "CNN checkpoint, and optimizer diagnostics remain available."
+            )
+            prepared = None
+            st.markdown("#### Model status")
+            checkpoint_rows = [
+                {"Property": "Checkpoint", "Value": checkpoint_status},
+                {"Property": "Parameters", "Value": str(parameter_count)},
+                {"Property": "Compute device", "Value": str(device).upper()},
+            ]
+            st.dataframe(checkpoint_rows, width="stretch", hide_index=True)
         st.markdown(
             '<div class="section-sub">Dataset Metadata</div>',
             unsafe_allow_html=True,
         )
 
         d1, d2, d3, d4 = st.columns(4)
-        d1.metric("TOTAL RECORDS", f"{len(prepared.sample_ids):,}")
-        d2.metric("WAVEFORM POINTS", f"{prepared.target_voltage.shape[1]:,}")
-        d3.metric("OPERATING FEATURES", len(prepared.operating_feature_names))
+        d1.metric("TOTAL RECORDS", f"{len(prepared.sample_ids):,}" if prepared is not None else "Unavailable")
+        d2.metric("WAVEFORM POINTS", f"{prepared.target_voltage.shape[1]:,}" if prepared is not None else "Unavailable")
+        d3.metric("OPERATING FEATURES", len(prepared.operating_feature_names) if prepared is not None else 0)
         d4.metric("COMPUTE DEVICE", str(device).upper())
 
         st.markdown("#### Dataset partition")
@@ -1329,7 +1395,11 @@ try:
         st.dataframe(
             [
                 {"Feature": str(name)}
-                for name in prepared.operating_feature_names
+                for name in (
+                    prepared.operating_feature_names
+                    if prepared is not None
+                    else ()
+                )
             ],
             width="stretch",
             hide_index=True,
@@ -1590,13 +1660,16 @@ try:
                 use_container_width=True,
             )
 
-        training_indices = prepared.indices("training")
-        normalization_for_bounds = stats if stats is not None else prepared.stats
-        training_conditions = (
-            prepared.operating_conditions[training_indices].astype(np.float64)
-            * np.asarray(normalization_for_bounds.operating_std, dtype=np.float64)
-            + np.asarray(normalization_for_bounds.operating_mean, dtype=np.float64)
-        )
+        if prepared is not None:
+            training_indices = prepared.indices("training")
+            normalization_for_bounds = stats if stats is not None else prepared.stats
+            training_conditions = (
+                prepared.operating_conditions[training_indices].astype(np.float64)
+                * np.asarray(normalization_for_bounds.operating_std, dtype=np.float64)
+                + np.asarray(normalization_for_bounds.operating_mean, dtype=np.float64)
+            )
+        else:
+            training_conditions = None
         selected_conditions = np.asarray(
             [
                 live_modulation_index,
@@ -1619,11 +1692,17 @@ try:
             ],
             dtype=np.float64,
         )
-        support_warnings = operating_condition_support_warnings(
-            selected_model_conditions,
-            training_conditions,
-            prepared.operating_feature_names,
-        )
+        if prepared is not None:
+            support_warnings = operating_condition_support_warnings(
+                selected_model_conditions,
+                training_conditions,
+                prepared.operating_feature_names,
+            )
+        else:
+            support_warnings = (
+                "Dataset marginal-support information is unavailable because "
+                "the original training dataset is not loaded.",
+            )
         if support_warnings:
             st.warning(
                 "CNN extrapolation risk: " + " ".join(support_warnings)
@@ -2073,10 +2152,18 @@ try:
             stored_live_result = st.session_state.get("live_demo_result")
             chat_context = {
                 "dataset": {
-                    "validated": True,
-                    "record_count": int(len(prepared.sample_ids)),
+                    "validated": prepared is not None,
+                    "record_count": (
+                        int(len(prepared.sample_ids))
+                        if prepared is not None
+                        else None
+                    ),
                     "split_counts": split_counts,
-                    "waveform_points": int(prepared.input_voltage.shape[1]),
+                    "waveform_points": (
+                        int(prepared.input_voltage.shape[1])
+                        if prepared is not None
+                        else None
+                    ),
                 },
                 "cnn": {
                     "checkpoint_status": checkpoint_status,
@@ -3466,6 +3553,7 @@ try:
                     loaded_checkpoint_sha256 is None
                     or loaded_checkpoint_sha256
                     != "9ffea39995c4bbba15f1f3572c9aaf54d49ad6ff1b1a186c4cafffe38263636c"
+                    or prepared is None
                     or Path(resolved_dataset_path).resolve()
                     != Path(default_dataset).resolve()
                 ):
@@ -3948,10 +4036,18 @@ try:
                             else default_checkpoint.name
                         ),
                         "checkpoint_sha256": hashlib.sha256(checkpoint_bytes).hexdigest(),
-                        "dataset_source_name": resolved_dataset_path.name,
-                        "dataset_cache_identity_sha256": hashlib.sha256(
-                            source_fingerprint(resolved_dataset_path).encode("utf-8")
-                        ).hexdigest(),
+                        "dataset_source_name": (
+                            resolved_dataset_path.name
+                            if prepared is not None
+                            else None
+                        ),
+                        "dataset_cache_identity_sha256": (
+                            hashlib.sha256(
+                                source_fingerprint(resolved_dataset_path).encode("utf-8")
+                            ).hexdigest()
+                            if prepared is not None
+                            else None
+                        ),
                         "dataset_usage": (
                             "Live phase optimization evaluates candidates at the explicitly recorded "
                             "user-selected operating conditions; no dataset record lookup is used."
