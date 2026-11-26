@@ -100,198 +100,514 @@ def _mark_live_playback_manual_selection() -> None:
 st.markdown(
     """
     <style>
-    :root {
-        --bg: #0b1018;
-        --panel: #111a26;
-        --panel2: #151f2d;
-        --line: #263447;
-        --muted: #91a1b5;
-        --text: #e8eef6;
-        --cyan: #43d6c5;
-        --blue: #659df5;
+:root {
+    color-scheme: dark;
+    --bg: #080d16;
+    --surface: #111a28;
+    --surface-raised: #172438;
+    --surface-soft: #1b2a40;
+    --line: #29394f;
+    --line-strong: #3a526e;
+    --muted: #91a4ba;
+    --text: #edf3fb;
+    --cyan: #54e0cf;
+    --blue: #78a9ff;
+    --gold: #f1bd70;
+    --shadow: 0 12px 32px rgba(0, 0, 0, .18);
+}
+
+.stApp {
+    color: var(--text);
+    background:
+        radial-gradient(ellipse at 14% 0%, rgba(35, 76, 105, .2), transparent 34%),
+        var(--bg);
+    font-family: "Inter", "Segoe UI", sans-serif;
+}
+
+[data-testid="stAppViewContainer"] {
+    background: transparent;
+    min-width: 0;
+}
+
+.block-container {
+    max-width: 1640px;
+    padding-top: .9rem;
+    padding-bottom: 2.5rem;
+}
+
+[data-testid="stHeader"] {
+    background: rgba(8, 13, 22, .88);
+}
+
+[data-testid="stSidebar"] {
+    background: #0c1421;
+    border-right: 1px solid var(--line);
+}
+
+[data-testid="stSidebar"] * {
+    color: var(--text);
+}
+
+[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
+    padding: 1.15rem .9rem 1.5rem;
+}
+
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+    color: #aab9ca;
+    font-size: .8rem;
+}
+
+[data-testid="stSidebar"] [data-testid="stExpander"] {
+    background: #101a29;
+}
+
+[data-testid="stSidebar"] hr,
+hr {
+    border-color: var(--line);
+}
+
+[data-testid="stSidebar"] button {
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+}
+
+.topline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: .4rem 0 1rem;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 1.35rem;
+}
+
+.brand {
+    color: #f7fbff;
+    font-size: 1.05rem;
+    font-weight: 850;
+    letter-spacing: .14em;
+}
+
+.brand span {
+    color: var(--cyan);
+}
+
+.top-meta {
+    color: var(--muted);
+    font-size: .75rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.hero {
+    position: relative;
+    overflow: hidden;
+    padding: 1.9rem 2rem;
+    border: 1px solid #35516b;
+    border-radius: 20px;
+    background: linear-gradient(120deg, #142238, #101b2b 65%, #102a34);
+    margin-bottom: .95rem;
+    box-shadow: var(--shadow);
+}
+
+.hero:after {
+    content: "";
+    position: absolute;
+    right: 2%;
+    top: 20%;
+    width: 180px;
+    height: 180px;
+    border: 1px solid rgba(84, 224, 207, .12);
+    border-radius: 50%;
+    box-shadow:
+        0 0 0 25px rgba(84, 224, 207, .025),
+        0 0 0 50px rgba(84, 224, 207, .02);
+    pointer-events: none;
+}
+
+.eyebrow {
+    color: var(--cyan);
+    font-size: .68rem;
+    font-weight: 850;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    margin-bottom: .65rem;
+}
+
+.hero h1 {
+    color: #f6f9fd;
+    font-size: clamp(1.55rem, 3vw, 2.3rem);
+    line-height: 1.18;
+    font-weight: 800;
+    margin: 0 0 .65rem;
+}
+
+.hero p {
+    color: #b7c7d9;
+    margin: 0;
+    font-size: .92rem;
+}
+
+.section-heading {
+    color: #f0f5fb;
+    font-size: 1.12rem;
+    font-weight: 750;
+    line-height: 1.35;
+    letter-spacing: -.015em;
+    margin: .25rem 0 .35rem;
+    padding-left: .65rem;
+    border-left: 2px solid rgba(84, 224, 207, .7);
+}
+
+.section-sub {
+    color: var(--muted);
+    font-size: .83rem;
+    line-height: 1.55;
+    max-width: 76ch;
+    margin-bottom: 1rem;
+}
+
+.panel {
+    min-height: 100%;
+    padding: 1.1rem 1.2rem;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    background: rgba(19, 31, 48, .96);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+    transition: border-color .2s ease;
+}
+
+.panel:hover {
+    border-color: #45617e;
+}
+
+.panel-label {
+    color: var(--muted);
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+}
+
+.panel-value {
+    color: #f4f8fc;
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin-top: .4rem;
+}
+
+.panel-note {
+    color: var(--muted);
+    font-size: .76rem;
+    margin-top: .25rem;
+}
+
+.status {
+    display: inline-block;
+    padding: .34rem .65rem;
+    border: 1px solid #315263;
+    border-radius: 999px;
+    background: rgba(21, 43, 58, .72);
+    color: #a9d8e2;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+}
+
+.dataset-status-note {
+    display: flex;
+    align-items: flex-start;
+    gap: .65rem;
+    margin: .35rem 0;
+    padding: .55rem .75rem;
+    border: 1px solid rgba(58, 82, 110, .55);
+    border-left: 2px solid #6688a8;
+    border-radius: 9px;
+    background: rgba(17, 26, 40, .52);
+    color: #aebed0;
+    font-size: .78rem;
+    line-height: 1.45;
+}
+
+.dataset-status-note p {
+    margin: 0;
+}
+
+.dataset-status-dot {
+    flex: 0 0 auto;
+    width: .42rem;
+    height: .42rem;
+    margin-top: .32rem;
+    border-radius: 50%;
+    background: #82a6c8;
+}
+
+.notice {
+    padding: .85rem 1rem;
+    border: 1px solid #30445b;
+    border-left: 3px solid var(--gold);
+    border-radius: 11px;
+    background: rgba(21, 34, 52, .96);
+    color: #c3d0df;
+    font-size: .83rem;
+    margin: .85rem 0 1rem;
+}
+
+div[data-testid="stMetric"] {
+    height: 100%;
+    padding: 15px 17px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #152236;
+    box-shadow: 0 7px 22px rgba(0, 0, 0, .12);
+}
+
+div[data-testid="stMetricLabel"] {
+    color: var(--muted);
+    font-size: .76rem;
+    font-weight: 650;
+}
+
+div[data-testid="stMetricValue"] {
+    color: #f3f7fc;
+    font-weight: 800;
+}
+
+div[data-testid="stTabs"] {
+    min-width: 0;
+    width: 100%;
+    margin-top: .4rem;
+}
+
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] {
+    margin: .25rem 0 1.25rem;
+}
+
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] {
+    gap: .35rem;
+    width: 100%;
+    padding: .4rem;
+    border: 1px solid #2a3c53;
+    border-radius: 13px;
+    background: #0d1624;
+}
+
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"] {
+    flex: 0 0 auto;
+    min-height: 2.8rem;
+    padding: .65rem .85rem;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: transparent;
+    color: #9aacc0;
+    font-size: .74rem;
+    font-weight: 750;
+    letter-spacing: .045em;
+    white-space: nowrap;
+    transition: color .15s ease, background-color .15s ease, border-color .15s ease;
+}
+
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"]:hover {
+    border-color: #30455f;
+    background: #142033;
+    color: var(--text);
+}
+
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"][aria-selected="true"] {
+    border-color: #36536d;
+    background: #1a2a3e;
+    color: #9ce9df;
+    box-shadow: inset 0 -2px 0 var(--cyan);
+}
+
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"]:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+}
+
+[data-testid="stTabPanel"] [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] {
+    gap: .15rem;
+    padding: 0 .1rem;
+    border-bottom: 1px solid #26364b;
+}
+
+[data-testid="stTabPanel"] [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"] {
+    min-height: 2.35rem;
+    padding: .55rem .75rem;
+    border: 0;
+    border-radius: 6px 6px 0 0;
+    background: transparent;
+    color: #8498ae;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .035em;
+    white-space: nowrap;
+    transition: color .15s ease, background-color .15s ease;
+}
+
+[data-testid="stTabPanel"] [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"]:hover {
+    background: rgba(120, 169, 255, .06);
+    color: #d6e3f0;
+}
+
+[data-testid="stTabPanel"] [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"][aria-selected="true"] {
+    background: rgba(120, 169, 255, .07);
+    color: #abd2ff;
+    box-shadow: inset 0 -2px 0 var(--blue);
+}
+
+[data-testid="stTabPanel"] [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"]:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+}
+
+div[data-testid="stDataFrame"],
+div[data-testid="stTable"] {
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+}
+
+div[data-testid="stImage"],
+div[data-testid="stPlotlyChart"] {
+    overflow: hidden;
+    border: 1px solid rgba(58, 82, 110, .58);
+    border-radius: 14px;
+    background: rgba(17, 26, 40, .72);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+}
+
+.stButton button,
+.stDownloadButton button,
+[data-testid="stFormSubmitButton"] button {
+    min-height: 2.55rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    background: #18263a;
+    color: var(--text);
+    font-weight: 700;
+    transition: border-color .2s ease, color .2s ease;
+}
+
+.stButton button:hover,
+.stDownloadButton button:hover,
+[data-testid="stFormSubmitButton"] button:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+}
+
+.stButton button[kind="primary"],
+[data-testid="stFormSubmitButton"] button[kind="primary"] {
+    border-color: rgba(84, 224, 207, .55);
+    background: #176b76;
+    color: #f4fffe;
+}
+
+.stButton button[kind="primary"]:hover,
+[data-testid="stFormSubmitButton"] button[kind="primary"]:hover {
+    border-color: #8cf2e5;
+    color: #fff;
+}
+
+.stTextInput input,
+.stNumberInput input,
+.stSelectbox div[data-baseweb="select"],
+.stTextArea textarea,
+[data-testid="stDateInput"] input,
+[data-testid="stTimeInput"] input {
+    border-color: #33465d !important;
+    border-radius: 10px !important;
+    background-color: #101a29 !important;
+}
+
+.stTextInput input:focus,
+.stNumberInput input:focus,
+.stTextArea textarea:focus {
+    border-color: var(--cyan) !important;
+    box-shadow: 0 0 0 1px rgba(84, 224, 207, .35) !important;
+}
+
+[data-testid="stSlider"] [role="slider"] {
+    background: var(--cyan);
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(84, 224, 207, .16);
+}
+
+[data-testid="stExpander"] {
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(17, 26, 40, .58);
+}
+
+[data-testid="stExpander"] summary {
+    color: var(--text);
+    font-weight: 700;
+}
+
+[data-testid="stFileUploader"] section {
+    border-color: var(--line-strong);
+    border-radius: 12px;
+    background: rgba(17, 26, 40, .55);
+}
+
+[data-testid="stAlert"] {
+    border-radius: 12px;
+}
+
+[data-testid="stWidgetLabel"] p {
+    color: #b6c4d4;
+    font-size: .78rem;
+    font-weight: 600;
+}
+
+[data-testid="stChatMessage"] {
+    border: 1px solid rgba(58, 82, 110, .55);
+    border-radius: 14px;
+    background: rgba(17, 26, 40, .74);
+}
+
+h2,
+h3,
+h4 {
+    color: #edf4fc !important;
+    letter-spacing: -.015em;
+}
+
+@media (max-width: 768px) {
+    .hero {
+        padding: 1.25rem 1.1rem;
     }
 
-    .stApp {
-        background: var(--bg);
-        color: var(--text);
-    }
-
-    .block-container {
-        max-width: 1580px;
-        padding-top: 1.25rem;
-        padding-bottom: 3rem;
-    }
-
-    [data-testid="stSidebar"] {
-        background: #0f1722;
-        border-right: 1px solid var(--line);
-    }
-
-    [data-testid="stHeader"] {
-        background: rgba(11, 16, 24, 0.9);
-    }
-
-    .topline {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 16px;
-        padding: 0.3rem 0 1rem 0;
-        border-bottom: 1px solid var(--line);
-        margin-bottom: 1.5rem;
-    }
-
-    .brand {
-        color: #f3f7fc;
-        font-size: 1.05rem;
-        font-weight: 800;
-        letter-spacing: .16em;
-    }
-
-    .brand span {
-        color: var(--cyan);
+    .hero:after {
+        right: -80px;
     }
 
     .top-meta {
-        color: var(--muted);
-        font-size: .78rem;
-        letter-spacing: .08em;
-        text-transform: uppercase;
+        display: none;
     }
 
-    .hero {
-        padding: 1.5rem 1.7rem;
-        border: 1px solid #2b4054;
-        border-radius: 15px;
-        background:
-            radial-gradient(circle at 85% 20%, rgba(67,214,197,.13), transparent 30%),
-            linear-gradient(115deg, #142235, #111b29 65%, #142b35);
-        margin-bottom: 1.15rem;
+    .block-container {
+        padding: .65rem .7rem 2rem;
     }
 
-    .eyebrow {
-        color: var(--cyan);
-        font-size: .72rem;
-        font-weight: 800;
-        letter-spacing: .17em;
-        text-transform: uppercase;
-        margin-bottom: .55rem;
+    [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] {
+        gap: .2rem;
+        padding: .3rem;
     }
 
-    .hero h1 {
-        color: #f4f7fb;
-        font-size: clamp(1.6rem, 3vw, 2.25rem);
-        line-height: 1.15;
-        font-weight: 750;
-        margin: 0 0 .55rem 0;
+    [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"] {
+        min-height: 2.55rem;
+        padding: .55rem .65rem;
+        font-size: .68rem;
     }
 
-    .hero p {
-        color: #aebed0;
-        margin: 0;
-        font-size: .95rem;
+    [data-testid="stTabPanel"] [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"] {
+        padding: .5rem .55rem;
+        font-size: .66rem;
     }
-
-    .section-heading {
-        color: #e9f0f8;
-        font-size: 1.05rem;
-        font-weight: 700;
-        margin: .4rem 0 .2rem 0;
-    }
-
-    .section-sub {
-        color: var(--muted);
-        font-size: .82rem;
-        margin-bottom: .9rem;
-    }
-
-    .panel {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        padding: 1rem 1.1rem;
-        min-height: 100%;
-    }
-
-    .panel-label {
-        color: var(--muted);
-        font-size: .72rem;
-        font-weight: 700;
-        letter-spacing: .1em;
-        text-transform: uppercase;
-    }
-
-    .panel-value {
-        color: #f1f6fc;
-        font-size: 1.25rem;
-        font-weight: 750;
-        margin-top: .35rem;
-    }
-
-    .panel-note {
-        color: var(--muted);
-        font-size: .76rem;
-        margin-top: .2rem;
-    }
-
-    .status {
-        display: inline-block;
-        padding: .35rem .65rem;
-        border: 1px solid #28675d;
-        border-radius: 30px;
-        background: #102a28;
-        color: #85e3d1;
-        font-size: .75rem;
-        font-weight: 700;
-    }
-
-    .notice {
-        background: #171f2a;
-        border: 1px solid #344356;
-        border-left: 3px solid #d6a75b;
-        border-radius: 8px;
-        padding: .75rem 1rem;
-        color: #b8c5d4;
-        font-size: .82rem;
-        margin: .8rem 0 1rem 0;
-    }
-
-    div[data-testid="stMetric"] {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 11px;
-        padding: 13px 15px;
-    }
-
-    div[data-testid="stMetricLabel"] {
-        color: var(--muted);
-        font-size: .78rem;
-    }
-
-    div[data-testid="stMetricValue"] {
-        color: #f2f6fb;
-        font-weight: 750;
-    }
-
-    div[data-testid="stTabs"] button {
-        font-weight: 650;
-        font-size: .88rem;
-    }
-
-    div[data-testid="stDataFrame"] {
-        border: 1px solid var(--line);
-        border-radius: 10px;
-    }
-
-    .stButton button, .stDownloadButton button {
-        border-radius: 8px;
-        font-weight: 650;
-    }
-
-    hr {
-        border-color: var(--line);
-    }
-    </style>
+}
+</style>
     """,
     unsafe_allow_html=True,
 )
@@ -585,6 +901,7 @@ st.markdown(
     <div class="hero">
         <div class="eyebrow">Ideal software simulation, not hardware validation.</div>
         <h1>Hybrid CNN Inverter Simulation &amp; Harmonic Analysis</h1>
+        <p>Simulation workspace · CNN-assisted switching · waveform and harmonic insights</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -621,11 +938,17 @@ try:
         )
     if dataset_error is not None:
         if isinstance(dataset_error, FileNotFoundError):
-            st.info(
-                "The configured optional training dataset is not available. "
-                "No upload is needed for live inverter simulation or CNN "
-                "inference. Dataset record views, preprocessing, and held-out "
-                "evaluation require the dataset ZIP or extracted CSV files."
+            st.markdown(
+                """
+                <div class="dataset-status-note">
+                    <span class="dataset-status-dot"></span>
+                    <p>The configured optional training dataset is not available.
+                    No upload is needed for live inverter simulation or CNN
+                    inference. Dataset record views, preprocessing, and held-out
+                    evaluation require the dataset ZIP or extracted CSV files.</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
         else:
             st.error(
@@ -716,7 +1039,7 @@ try:
     if prepared is not None:
         split_options = ["All"] + sorted(set(all_splits.tolist()))
 
-        selector_col1, selector_col2, selector_col3 = st.columns([1.2, 1.2, 2.6])
+        selector_col1, selector_col2 = st.columns([1, 1])
 
         with selector_col1:
             selected_split = st.selectbox(
@@ -745,98 +1068,64 @@ try:
         index = 0
         selected_id = None
         record_status = "DATASET NOT LOADED"
-        st.info(
-            "The original dataset is unavailable. Live CNN inference and "
-            "simulator/optimizer workflows remain available. Dataset record "
-            "views and test evaluation require an uploaded or local dataset."
-        )
-
-    if prepared is not None:
-        with selector_col3:
-            st.markdown(
-                f"""
-                <div style="padding-top:1.75rem;text-align:right">
-                    <span class="status">● {record_status}</span>
-                    &nbsp;
-                    <span class="status">● CNN {checkpoint_status.upper()}</span>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-    else:
         st.markdown(
-            f"""
-            <div style="padding-top:1.75rem;text-align:right">
-                <span class="status">● {record_status}</span>
-                &nbsp;
-                <span class="status">● CNN {checkpoint_status.upper()}</span>
+            """
+            <div class="dataset-status-note">
+                <span class="dataset-status-dot"></span>
+                <p>The original dataset is unavailable. Live CNN inference and
+                simulator/optimizer workflows remain available. Dataset record
+                views and test evaluation require an uploaded or local dataset.</p>
             </div>
             """,
             unsafe_allow_html=True,
         )
-
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-
-    # ========================================================
-    # TOP-LEVEL ENGINEERING INDICATORS
-    # ========================================================
-
-    c1, c2, c3, c4 = st.columns(4)
-
-    with c1:
-        show_panel("INVERTER TOPOLOGY", "7-Level", "Three-cell multilevel structure")
-
-    with c2:
-        show_panel(
-            "FUNDAMENTAL FREQUENCY",
-            f"{config.get('fundamental frequency', '50')} Hz",
-            "Dataset configuration",
-        )
-
-    with c3:
-        show_panel(
-            "SAMPLING FREQUENCY",
-            f"{int(config.get('sampling frequency', 20000)) / 1000:g} kHz",
-            "Dataset waveform sampling",
-        )
-
-    with c4:
-        show_panel(
-            "CNN MODEL",
-            f"{parameter_count:,}" if model is not None else "Unavailable",
-            "Trainable parameters" if model is not None else "Checkpoint not loaded",
-        )
-
-    st.write("")
 
     # ========================================================
     # MAIN NAVIGATION
     # ========================================================
 
     (
+        overview_tab,
         live_demo_tab,
+        cnn_tab,
+        optimization_lab_tab,
         research_tab,
     ) = st.tabs(
         [
-            "LIVE SIMULATION WORKSPACE",
-            "RESEARCH WORKFLOW",
+            "OVERVIEW",
+            "LIVE SIMULATOR",
+            "CNN INTELLIGENCE",
+            "OPTIMIZATION LAB",
+            "RESEARCH & EVALUATION",
         ]
     )
-
-    with research_tab:
-        (
-            overview_tab,
-            cnn_tab,
-            test_evaluation_tab,
-            diagnostics_tab,
-        ) = st.tabs(
-            [
-                "OVERVIEW",
-                "CNN PREDICTION",
-                "CNN TEST EVALUATION",
-                "DATA DIAGNOSTICS",
-            ]
+    optimization_lab_tab.markdown(
+        '<div class="section-heading">Optimization lab</div>',
+        unsafe_allow_html=True,
+    )
+    optimization_lab_tab.markdown(
+        '<div class="section-sub">Simulator-verified phase strategies, live-conditioned search, and CNN-guided candidate ranking.</div>',
+        unsafe_allow_html=True,
+    )
+    research_tab.markdown(
+        '<div class="section-heading">Research &amp; evaluation</div>',
+        unsafe_allow_html=True,
+    )
+    research_tab.markdown(
+        '<div class="section-sub">Dataset validation, held-out evaluation, diagnostics, and evidence from recorded experiments.</div>',
+        unsafe_allow_html=True,
+    )
+    cnn_inference_tab, cnn_model_tab = cnn_tab.tabs(
+        ["INFERENCE", "MODEL DETAILS"]
+    )
+    advisor_tab, phase_optimization_tab, cnn_guided_tab = optimization_lab_tab.tabs(
+        ["SWITCHING ADVISOR", "PHASE OPTIMIZATION", "CNN-GUIDED SEARCH"]
+    )
+    research_test_tab, dataset_diagnostics_tab, research_modules_tab = (
+        research_tab.tabs(
+            ["EVALUATION", "DATASET DIAGNOSTICS", "RESEARCH MODULES"]
         )
+    )
 
     # --------------------------------------------------------
     # OVERVIEW
@@ -844,16 +1133,84 @@ try:
 
     with overview_tab:
         st.markdown(
-            '<div class="section-heading">Inverter waveform monitoring</div>',
+            '<div class="section-heading">System overview</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"""
+            <div style="display:flex;flex-wrap:wrap;gap:.55rem;margin:.5rem 0 1rem">
+                <span class="status">● {record_status}</span>
+                <span class="status">● CNN {checkpoint_status.upper()}</span>
+                <span class="status">● IDEAL SOFTWARE SIMULATION</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        indicator_columns = st.columns(4)
+        with indicator_columns[0]:
+            show_panel(
+                "INVERTER TOPOLOGY",
+                "7-Level",
+                "Three-cell multilevel structure",
+            )
+        with indicator_columns[1]:
+            show_panel(
+                "FUNDAMENTAL FREQUENCY",
+                f"{config.get('fundamental frequency', '50')} Hz",
+                "Dataset configuration",
+            )
+        with indicator_columns[2]:
+            show_panel(
+                "SAMPLING FREQUENCY",
+                f"{int(config.get('sampling frequency', 20000)) / 1000:g} kHz",
+                "Dataset waveform sampling",
+            )
+        with indicator_columns[3]:
+            show_panel(
+                "CNN MODEL",
+                f"{parameter_count:,}" if model is not None else "Unavailable",
+                "Trainable parameters"
+                if model is not None
+                else "Checkpoint not loaded",
+            )
+
+        st.markdown(
+            """
+            <div class="section-sub">
+                A research workspace for ideal seven-level inverter simulation,
+                reference-waveform CNN inference, phase optimization, and
+                scientifically scoped harmonic analysis.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        cnn_inference_tab.markdown(
+            '<div class="section-heading">CNN intelligence</div>',
+            unsafe_allow_html=True,
+        )
+        cnn_status_columns = cnn_inference_tab.columns(4)
+        cnn_status_columns[0].metric("CHECKPOINT", checkpoint_status)
+        cnn_status_columns[1].metric(
+            "MODEL PARAMETERS",
+            f"{parameter_count:,}" if model is not None else "Unavailable",
+        )
+        cnn_status_columns[2].metric("COMPUTE DEVICE", str(device).upper())
+        cnn_status_columns[3].metric(
+            "DATASET RECORD",
+            str(selected_id) if selected_id is not None else "Unavailable",
+        )
+        cnn_inference_tab.markdown(
+            '<div class="section-heading">Input waveforms and selected record</div>',
             unsafe_allow_html=True,
         )
         if prepared is None:
-            st.info(
+            cnn_inference_tab.info(
                 "Dataset waveform monitoring is unavailable until the project "
                 "dataset ZIP or extracted CSV directory is provided."
             )
         else:
-            left, right = st.columns([1.8, 1])
+            left, right = cnn_inference_tab.columns([1.8, 1])
 
             with left:
                 voltage_chart = make_chart(
@@ -979,7 +1336,7 @@ try:
     # CNN PREDICTION
     # --------------------------------------------------------
 
-    with cnn_tab:
+    with cnn_inference_tab:
         st.markdown(
             '<div class="section-heading">CNN prediction</div>',
             unsafe_allow_html=True,
@@ -1093,7 +1450,7 @@ try:
     # HELD-OUT CNN TEST EVALUATION
     # --------------------------------------------------------
 
-    with test_evaluation_tab:
+    with research_test_tab:
         st.markdown(
             '<div class="section-heading">CNN Test Evaluation</div>',
             unsafe_allow_html=True,
@@ -1337,9 +1694,9 @@ try:
     # DATA DIAGNOSTICS
     # --------------------------------------------------------
 
-    with diagnostics_tab:
+    with dataset_diagnostics_tab:
         st.markdown(
-            '<div class="section-heading">Model Diagnostics</div>',
+            '<div class="section-heading">Dataset diagnostics</div>',
             unsafe_allow_html=True,
         )
         if prepared is None:
@@ -1348,13 +1705,13 @@ try:
                 "CNN checkpoint, and optimizer diagnostics remain available."
             )
             prepared = None
-            st.markdown("#### Model status")
+            cnn_model_tab.markdown("#### Model status")
             checkpoint_rows = [
                 {"Property": "Checkpoint", "Value": checkpoint_status},
                 {"Property": "Parameters", "Value": str(parameter_count)},
                 {"Property": "Compute device", "Value": str(device).upper()},
             ]
-            st.dataframe(checkpoint_rows, width="stretch", hide_index=True)
+            cnn_model_tab.dataframe(checkpoint_rows, width="stretch", hide_index=True)
         st.markdown(
             '<div class="section-sub">Dataset Metadata</div>',
             unsafe_allow_html=True,
@@ -1409,7 +1766,11 @@ try:
             hide_index=True,
         )
 
-        st.markdown("#### Model status")
+        cnn_model_details = cnn_model_tab.expander(
+            "MODEL & CHECKPOINT DETAILS",
+            expanded=False,
+        )
+        cnn_model_details.markdown("#### Model status")
         checkpoint_rows = [
             {"Property": "Checkpoint", "Value": checkpoint_status},
             {"Property": "Compute device", "Value": str(device).upper()},
@@ -1444,15 +1805,15 @@ try:
                     },
                 ]
             )
-        st.dataframe(
+        cnn_model_details.dataframe(
             checkpoint_rows,
             width="stretch",
             hide_index=True,
         )
         if model is not None:
-            st.markdown("#### CNN architecture")
+            cnn_model_details.markdown("#### CNN architecture")
             architecture = model.config
-            st.dataframe(
+            cnn_model_details.dataframe(
                 [
                     {"Component": "Waveform input", "Configuration": f"{architecture.waveform_points} points"},
                     {"Component": "Operating conditions", "Configuration": f"{architecture.operating_features} normalized features"},
@@ -1496,16 +1857,16 @@ try:
                     x_values=epochs,
                     x_label="Epoch index (–)",
                 )
-                st.pyplot(history_figure, width="stretch")
+                cnn_model_details.pyplot(history_figure, width="stretch")
                 plt.close(history_figure)
                 if model is not None:
-                    st.caption(
+                    cnn_model_details.caption(
                         f"Checkpoint-selected epoch: {int(checkpoint['epoch'])} "
                         f"(zero-based); stored best validation loss: "
                         f"{float(checkpoint['best_validation_loss']):.8f}."
                     )
         elif checkpoint_file is not None:
-            st.caption(
+            cnn_model_details.caption(
                 "No matching training history for uploaded checkpoint."
             )
 
@@ -1515,9 +1876,14 @@ try:
 
     with live_demo_tab:
         st.markdown(
-            '<div class="section-heading">Live Simulation</div>',
+            '<div class="section-heading">Live inverter simulator</div>',
             unsafe_allow_html=True,
         )
+        st.markdown(
+            '<div class="section-sub">Configure the operating point, run the analytical inverter model, and inspect its simulated response.</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown("#### Operating parameters")
         st.markdown("#### Presets")
         preset_columns = st.columns(len(LIVE_PRESETS))
         for preset_column, preset in zip(preset_columns, LIVE_PRESETS):
@@ -1657,6 +2023,7 @@ try:
                     step=1.0,
                     key=f"live_demo_carrier_3_{reset_generation}",
                 )
+            st.markdown("#### Simulation actions")
             run_live = st.button(
                 "Run New Simulation",
                 disabled=model is None or stats is None,
@@ -1720,7 +2087,10 @@ try:
                 "CNN trained at 100 V/cell; other voltages are out of support."
             )
 
-        with st.expander("OFFLINE SWITCHING-PHASE RECOMMENDER", expanded=False):
+        with advisor_tab.expander(
+            "OFFLINE SWITCHING-PHASE RECOMMENDER",
+            expanded=False,
+        ):
             st.warning(
                 "Local POA–PFO; gates and THD are simulator-verified."
             )
@@ -1903,7 +2273,10 @@ try:
                     "Predicted THD: not used."
                 )
 
-        with st.expander("VALIDATED THD EXPERIMENT RESULTS", expanded=False):
+        with research_modules_tab.expander(
+            "VALIDATED THD EXPERIMENT RESULTS",
+            expanded=False,
+        ):
             st.caption(
                 "Primary before/after metric: event-based Parseval total voltage THD. "
                 "Event-based voltage/current harmonics 2–100 and sampled 20 kHz "
@@ -2109,7 +2482,10 @@ try:
                                     f"Figure unavailable: {figure_name}"
                                 )
 
-        with st.expander("AI PROJECT CHAT ASSISTANT (LOCAL MODEL)", expanded=True):
+        with research_modules_tab.expander(
+            "AI PROJECT CHAT ASSISTANT (LOCAL MODEL)",
+            expanded=True,
+        ):
             chat_model = st.text_input(
                 "LOCAL CHAT MODEL",
                 value=st.session_state.get(
@@ -2442,6 +2818,7 @@ try:
             st.error(live_error)
 
         live_result = st.session_state.get("live_demo_result")
+        st.markdown("#### Simulation results")
         if not isinstance(live_result, LiveSimulationResult):
             st.info(
                 "No simulation run yet. Use Run New Simulation to create the "
@@ -2458,7 +2835,10 @@ try:
         if isinstance(live_result, LiveSimulationResult) and not live_result_is_current:
             st.info("Controls changed since this run. Click Run New Simulation to update.")
         if isinstance(live_result, LiveSimulationResult):
-            with st.expander("MEASURED WAVEFORM VALIDATION (CSV)", expanded=False):
+            with research_modules_tab.expander(
+                "MEASURED WAVEFORM VALIDATION (CSV)",
+                expanded=False,
+            ):
                 st.info(
                     "Upload a measured inverter output-voltage CSV to compare its "
                     "sampled harmonic spectrum with the current simulation. This is "
@@ -2604,7 +2984,10 @@ try:
                     plt.close(spectrum_figure)
         candidate_live_result = None
         if isinstance(live_result, LiveSimulationResult):
-            with st.expander("LIVE-INPUT-CONDITIONED PHASE OPTIMIZATION", expanded=False):
+            with phase_optimization_tab.expander(
+                "LIVE-INPUT-CONDITIONED PHASE OPTIMIZATION",
+                expanded=False,
+            ):
                 thd_surrogate_checkpoint = (
                     PROJECT_ROOT
                     / "experiments"
@@ -3013,7 +3396,10 @@ try:
                         )
                         st.pyplot(convergence_figure, width="stretch")
                         plt.close(convergence_figure)
-            with st.expander("CNN-GUIDED HYBRID OPTIMIZATION", expanded=False):
+            with cnn_guided_tab.expander(
+                "CNN-GUIDED HYBRID OPTIMIZATION",
+                expanded=False,
+            ):
                 st.info(
                     "This separate path uses the loaded CNN only to rank 64 POA/PFO "
                     "proposals; the top 8 are evaluated with event-based THD and the "
@@ -3295,6 +3681,7 @@ try:
                     "Displaying the last successful simulation using the operating "
                     "conditions listed below."
                 )
+            st.markdown("#### Performance and harmonic metrics")
             st.markdown(
                 f"#### Operating point · m = {live_result.modulation_index:.2f} · "
                 f"Vdc/cell = {live_result.dc_voltage_per_cell_v:g} V · "
@@ -3547,7 +3934,10 @@ try:
                 "full-spectrum THD is a separate all-energy measure; these values "
                 "are not interchangeable."
             )
-            with st.expander("RECORDED HELD-OUT CNN CHECK", expanded=False):
+            with research_modules_tab.expander(
+                "RECORDED HELD-OUT CNN CHECK",
+                expanded=False,
+            ):
                 held_out_report_path = (
                     PROJECT_ROOT
                     / "results"
@@ -3685,6 +4075,7 @@ try:
                 key="live_show_cnn_prediction_overlay",
             )
 
+            st.markdown("#### Waveforms")
             output_series = [
                 (
                     "Inverter output voltage",
@@ -3901,6 +4292,7 @@ try:
             st.pyplot(state_figure, width="stretch")
             plt.close(state_figure)
 
+            st.markdown("#### Harmonic analysis")
             spectrum_figure = make_harmonic_chart(
                 harmonic,
                 FUNDAMENTAL_FREQUENCY_HZ,
