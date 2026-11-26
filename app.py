@@ -112,6 +112,10 @@ st.markdown(
     --text: #edf3fb;
     --cyan: #54e0cf;
     --blue: #78a9ff;
+    --electric-blue: #68aaff;
+    --violet: #aa96ff;
+    --green: #63d5a5;
+    --amber: #f1b86d;
     --gold: #f1bd70;
     --shadow: 0 12px 32px rgba(0, 0, 0, .18);
 }
@@ -119,6 +123,7 @@ st.markdown(
 .stApp {
     color: var(--text);
     background:
+        radial-gradient(ellipse at 82% 4%, rgba(116, 87, 181, .12), transparent 30%),
         radial-gradient(ellipse at 14% 0%, rgba(35, 76, 105, .2), transparent 34%),
         var(--bg);
     font-family: "Inter", "Segoe UI", sans-serif;
@@ -205,7 +210,7 @@ hr {
     padding: 1.9rem 2rem;
     border: 1px solid #35516b;
     border-radius: 20px;
-    background: linear-gradient(120deg, #142238, #101b2b 65%, #102a34);
+    background: linear-gradient(120deg, #162740, #171b32 62%, #10303a);
     margin-bottom: .95rem;
     box-shadow: var(--shadow);
 }
@@ -256,7 +261,7 @@ hr {
     letter-spacing: -.015em;
     margin: .25rem 0 .35rem;
     padding-left: .65rem;
-    border-left: 2px solid rgba(84, 224, 207, .7);
+    border-left: 2px solid rgba(104, 170, 255, .78);
 }
 
 .section-sub {
@@ -268,17 +273,36 @@ hr {
 }
 
 .panel {
+    --panel-accent: var(--electric-blue);
     min-height: 100%;
     padding: 1.1rem 1.2rem;
     border: 1px solid var(--line);
+    border-top: 2px solid var(--panel-accent);
     border-radius: 15px;
-    background: rgba(19, 31, 48, .96);
+    background: linear-gradient(145deg, rgba(25, 37, 59, .96), rgba(17, 26, 40, .96));
     box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
     transition: border-color .2s ease;
 }
 
+[data-testid="stHorizontalBlock"] > [data-testid="column"]:nth-child(4n + 1) .panel {
+    --panel-accent: var(--cyan);
+}
+
+[data-testid="stHorizontalBlock"] > [data-testid="column"]:nth-child(4n + 2) .panel {
+    --panel-accent: var(--electric-blue);
+}
+
+[data-testid="stHorizontalBlock"] > [data-testid="column"]:nth-child(4n + 3) .panel {
+    --panel-accent: var(--violet);
+}
+
+[data-testid="stHorizontalBlock"] > [data-testid="column"]:nth-child(4n) .panel {
+    --panel-accent: var(--amber);
+}
+
 .panel:hover {
     border-color: #45617e;
+    border-top-color: var(--panel-accent);
 }
 
 .panel-label {
@@ -303,15 +327,35 @@ hr {
 }
 
 .status {
+    --status-accent: var(--electric-blue);
+    --status-bg: rgba(104, 170, 255, .1);
     display: inline-block;
     padding: .34rem .65rem;
-    border: 1px solid #315263;
+    border: 1px solid rgba(104, 170, 255, .36);
     border-radius: 999px;
-    background: rgba(21, 43, 58, .72);
-    color: #a9d8e2;
+    background: var(--status-bg);
+    color: var(--status-accent);
     font-size: .72rem;
     font-weight: 700;
     letter-spacing: .04em;
+}
+
+.status-success {
+    --status-accent: var(--green);
+    --status-bg: rgba(99, 213, 165, .1);
+    border-color: rgba(99, 213, 165, .4);
+}
+
+.status-warning {
+    --status-accent: var(--amber);
+    --status-bg: rgba(241, 184, 109, .1);
+    border-color: rgba(241, 184, 109, .4);
+}
+
+.status-info {
+    --status-accent: var(--electric-blue);
+    --status-bg: rgba(104, 170, 255, .1);
+    border-color: rgba(104, 170, 255, .36);
 }
 
 .dataset-status-note {
@@ -393,6 +437,8 @@ div[data-testid="stTabs"] {
 }
 
 [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"] {
+    --workspace-accent: var(--cyan);
+    --workspace-accent-bg: rgba(84, 224, 207, .1);
     flex: 0 0 auto;
     min-height: 2.8rem;
     padding: .65rem .85rem;
@@ -407,6 +453,31 @@ div[data-testid="stTabs"] {
     transition: color .15s ease, background-color .15s ease, border-color .15s ease;
 }
 
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"]:nth-child(1) {
+    --workspace-accent: var(--green);
+    --workspace-accent-bg: rgba(99, 213, 165, .1);
+}
+
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"]:nth-child(2) {
+    --workspace-accent: var(--cyan);
+    --workspace-accent-bg: rgba(84, 224, 207, .1);
+}
+
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"]:nth-child(3) {
+    --workspace-accent: var(--violet);
+    --workspace-accent-bg: rgba(170, 150, 255, .11);
+}
+
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"]:nth-child(4) {
+    --workspace-accent: var(--amber);
+    --workspace-accent-bg: rgba(241, 184, 109, .1);
+}
+
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"]:nth-child(5) {
+    --workspace-accent: var(--electric-blue);
+    --workspace-accent-bg: rgba(104, 170, 255, .1);
+}
+
 [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"]:hover {
     border-color: #30455f;
     background: #142033;
@@ -414,10 +485,10 @@ div[data-testid="stTabs"] {
 }
 
 [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"][aria-selected="true"] {
-    border-color: #36536d;
-    background: #1a2a3e;
-    color: #9ce9df;
-    box-shadow: inset 0 -2px 0 var(--cyan);
+    border-color: var(--workspace-accent);
+    background: var(--workspace-accent-bg);
+    color: var(--workspace-accent);
+    box-shadow: inset 0 -2px 0 var(--workspace-accent);
 }
 
 [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"]:focus-visible {
@@ -451,9 +522,9 @@ div[data-testid="stTabs"] {
 }
 
 [data-testid="stTabPanel"] [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"][aria-selected="true"] {
-    background: rgba(120, 169, 255, .07);
-    color: #abd2ff;
-    box-shadow: inset 0 -2px 0 var(--blue);
+    background: rgba(170, 150, 255, .09);
+    color: #c3b6ff;
+    box-shadow: inset 0 -2px 0 var(--violet);
 }
 
 [data-testid="stTabPanel"] [data-testid="stTabs"] > div[data-orientation="horizontal"] > [role="tablist"] > [role="tab"]:focus-visible {
@@ -471,10 +542,15 @@ div[data-testid="stTable"] {
 div[data-testid="stImage"],
 div[data-testid="stPlotlyChart"] {
     overflow: hidden;
-    border: 1px solid rgba(58, 82, 110, .58);
+    border: 1px solid rgba(104, 170, 255, .32);
     border-radius: 14px;
-    background: rgba(17, 26, 40, .72);
+    background: linear-gradient(145deg, rgba(25, 34, 57, .68), rgba(17, 26, 40, .72));
     box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+}
+
+div[data-testid="stImage"]:hover,
+div[data-testid="stPlotlyChart"]:hover {
+    border-color: rgba(170, 150, 255, .52);
 }
 
 .stButton button,
@@ -492,13 +568,13 @@ div[data-testid="stPlotlyChart"] {
 .stButton button:hover,
 .stDownloadButton button:hover,
 [data-testid="stFormSubmitButton"] button:hover {
-    border-color: var(--cyan);
-    color: var(--cyan);
+    border-color: var(--violet);
+    color: #c3b6ff;
 }
 
 .stButton button[kind="primary"],
 [data-testid="stFormSubmitButton"] button[kind="primary"] {
-    border-color: rgba(84, 224, 207, .55);
+    border-color: rgba(84, 224, 207, .58);
     background: #176b76;
     color: #f4fffe;
 }
@@ -523,14 +599,14 @@ div[data-testid="stPlotlyChart"] {
 .stTextInput input:focus,
 .stNumberInput input:focus,
 .stTextArea textarea:focus {
-    border-color: var(--cyan) !important;
-    box-shadow: 0 0 0 1px rgba(84, 224, 207, .35) !important;
+    border-color: var(--electric-blue) !important;
+    box-shadow: 0 0 0 1px rgba(104, 170, 255, .35) !important;
 }
 
 [data-testid="stSlider"] [role="slider"] {
-    background: var(--cyan);
-    border-color: var(--cyan);
-    box-shadow: 0 0 0 3px rgba(84, 224, 207, .16);
+    background: var(--electric-blue);
+    border-color: var(--electric-blue);
+    box-shadow: 0 0 0 3px rgba(104, 170, 255, .16);
 }
 
 [data-testid="stExpander"] {
@@ -543,6 +619,11 @@ div[data-testid="stPlotlyChart"] {
 [data-testid="stExpander"] summary {
     color: var(--text);
     font-weight: 700;
+    background: rgba(170, 150, 255, .035);
+}
+
+[data-testid="stExpander"] summary:hover {
+    background: rgba(170, 150, 255, .075);
 }
 
 [data-testid="stFileUploader"] section {
@@ -553,6 +634,7 @@ div[data-testid="stPlotlyChart"] {
 
 [data-testid="stAlert"] {
     border-radius: 12px;
+    border: 1px solid rgba(104, 170, 255, .3);
 }
 
 [data-testid="stWidgetLabel"] p {
@@ -562,9 +644,15 @@ div[data-testid="stPlotlyChart"] {
 }
 
 [data-testid="stChatMessage"] {
-    border: 1px solid rgba(58, 82, 110, .55);
+    border: 1px solid rgba(170, 150, 255, .34);
+    border-left: 3px solid rgba(170, 150, 255, .68);
     border-radius: 14px;
-    background: rgba(17, 26, 40, .74);
+    background: rgba(32, 29, 55, .55);
+}
+
+[data-testid="stChatInput"] {
+    border-color: rgba(170, 150, 255, .45);
+    border-radius: 12px;
 }
 
 h2,
@@ -1139,9 +1227,9 @@ try:
         st.markdown(
             f"""
             <div style="display:flex;flex-wrap:wrap;gap:.55rem;margin:.5rem 0 1rem">
-                <span class="status">● {record_status}</span>
-                <span class="status">● CNN {checkpoint_status.upper()}</span>
-                <span class="status">● IDEAL SOFTWARE SIMULATION</span>
+                <span class="status {'status-success' if record_status == 'DATASET VALIDATED' else 'status-warning'}">● {record_status}</span>
+                <span class="status {'status-success' if checkpoint_status == 'Loaded' else 'status-warning'}">● CNN {checkpoint_status.upper()}</span>
+                <span class="status status-info">● IDEAL SOFTWARE SIMULATION</span>
             </div>
             """,
             unsafe_allow_html=True,
@@ -2482,7 +2570,7 @@ try:
                                     f"Figure unavailable: {figure_name}"
                                 )
 
-        with research_modules_tab.expander(
+        with live_demo_tab.expander(
             "AI PROJECT CHAT ASSISTANT (LOCAL MODEL)",
             expanded=True,
         ):
